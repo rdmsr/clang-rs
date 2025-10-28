@@ -26,7 +26,7 @@ use clang_sys::*;
 
 use libc::{c_uint};
 
-use utility;
+use crate::utility;
 use super::{Availability, EntityKind, TranslationUnit, Unsaved, Usr};
 use super::diagnostic::{Diagnostic};
 
@@ -332,7 +332,7 @@ impl CompletionResults {
     }
 
     /// Returns the code completion results in this set of code completion results.
-    pub fn get_results(&self) -> Vec<CompletionResult> {
+    pub fn get_results(&'_ self) -> Vec<CompletionResult<'_>> {
         unsafe {
             let raws = slice::from_raw_parts((*self.ptr).Results, (*self.ptr).NumResults as usize);
             raws.iter().cloned().map(CompletionResult::from_raw).collect()
@@ -385,7 +385,7 @@ impl<'r> CompletionString<'r> {
         iter!(
             clang_getCompletionNumAnnotations(self.ptr),
             clang_getCompletionAnnotation(self.ptr),
-        ).map(utility::to_string).collect()
+        ).map(|x| unsafe { utility::to_string(x) }).collect()
     }
 
     /// Returns the availability of this completion string.
@@ -416,7 +416,7 @@ impl<'r> CompletionString<'r> {
     }
 
     /// Returns the chunks of this completion string.
-    pub fn get_chunks(&self) -> Vec<CompletionChunk> {
+    pub fn get_chunks(&'_ self) -> Vec<CompletionChunk<'_>> {
         iter!(
             clang_getNumCompletionChunks(self.ptr),
             clang_getCompletionChunkKind(self.ptr),

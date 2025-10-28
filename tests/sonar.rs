@@ -2,14 +2,14 @@ use clang::*;
 
 pub fn test(clang: &Clang) {
     macro_rules! assert_declaration_eq {
-        ($declaration:expr, $name:expr, SAME) => ({
+        ($declaration:expr_2021, $name:expr_2021, SAME) => ({
             let declaration = $declaration;
             assert_eq!(declaration.name, $name);
             assert_eq!(declaration.entity.get_name(), Some($name.into()));
             assert!(declaration.source.is_none());
         });
 
-        ($declaration:expr, $name:expr, DIFFERENT) => ({
+        ($declaration:expr_2021, $name:expr_2021, DIFFERENT) => ({
             let declaration = $declaration;
             assert_eq!(declaration.name, $name);
             assert_eq!(declaration.entity.get_name(), None);
@@ -36,7 +36,7 @@ pub fn test(clang: &Clang) {
         assert_eq!(definitions.len(), 4);
 
         macro_rules! assert_definition_eq {
-            ($definition:expr, $name:expr, $value:expr) => ({
+            ($definition:expr_2021, $name:expr_2021, $value:expr_2021) => ({
                 let definition = $definition;
                 assert_eq!(definition.name, $name);
                 assert_eq!(definition.value, $value);

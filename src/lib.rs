@@ -32,6 +32,7 @@ pub mod token;
 
 pub mod sonar;
 
+use std::cell::Cell;
 use std::cmp;
 use std::fmt;
 use std::hash;
@@ -43,18 +44,17 @@ use std::convert::TryInto;
 use std::ffi::{CString};
 use std::marker::{PhantomData};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{self, AtomicBool};
 
 use clang_sys::*;
 
 use libc::{c_int, c_uint, c_ulong};
 
-use completion::{Completer, CompletionString};
-use diagnostic::{Diagnostic};
-use documentation::{Comment};
-use source::{File, Module, SourceLocation, SourceRange};
-use token::{Token};
-use utility::{FromError, Nullable};
+use crate::completion::{Completer, CompletionString};
+use crate::diagnostic::{Diagnostic};
+use crate::documentation::{Comment};
+use crate::source::{File, Module, SourceLocation, SourceRange};
+use crate::token::{Token};
+use crate::utility::{FromError, Nullable};
 
 mod error;
 pub use self::error::*;
@@ -1092,7 +1092,6 @@ pub enum PrintingPolicyFlag {
 // RefQualifier __________________________________
 
 /// Indicates the ref qualifier of a C++ function or method type.
-#[cfg_attr(feature="cargo-clippy", allow(clippy::enum_variant_names))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[repr(C)]
 pub enum RefQualifier {
@@ -1616,11 +1615,18 @@ impl Visibility {
 
 type PhantomUnsendUnsync = PhantomData<*mut ()>;
 
-static AVAILABLE: AtomicBool = AtomicBool::new(true);
+thread_local! {
+  static CLANG_ACTIVE: Cell<bool> = Cell::new(false);
+}
+
 
 /// An empty type which prevents the use of this library from multiple threads simultaneously.
 #[derive(Debug)]
-pub struct Clang(PhantomUnsendUnsync);
+pub struct Clang {
+    #[cfg(feature = "runtime")]
+    libclang: Option<std::sync::Arc<clang_sys::SharedLibrary>>,
+    unsend_unsync: PhantomUnsendUnsync,
+}
 
 impl Clang {
     //- Constructors -----------------------------
@@ -1634,29 +1640,30 @@ impl Clang {
     /// * an instance of `Clang` already exists
     /// * a `libclang` shared library could not be found
     /// * a `libclang` shared library symbol could not be loaded
-    #[cfg(feature="runtime")]
+    #[cfg_attr(feature = "runtime", doc = "* a `libclang` shared library could not be found")]
+    #[cfg_attr(feature = "runtime", doc = "* a `libclang` shared library symbol could not be loaded")]
     pub fn new() -> Result<Clang, String> {
-        if AVAILABLE.swap(false, atomic::Ordering::SeqCst) {
-            load().map(|_| Clang(PhantomData))
-        } else {
-            Err("an instance of `Clang` already exists".into())
-        }
-    }
+        CLANG_ACTIVE.with(|clang_active| {
+            if clang_active.get() {
+                Err("an instance of `Clang` already exists".to_string())
+            } else {
+                clang_active.set(true);
+                Ok(())
+            }
+        })?;
 
-    /// Constructs a new `Clang`.
-    ///
-    /// Only one instance of `Clang` is allowed at a time.
-    ///
-    /// # Failures
-    ///
-    /// * an instance of `Clang` already exists
-    #[cfg(not(feature="runtime"))]
-    pub fn new() -> Result<Clang, String> {
-        if AVAILABLE.swap(false, atomic::Ordering::SeqCst) {
-            Ok(Clang(PhantomData))
-        } else {
-            Err("an instance of `Clang` already exists".into())
+        #[cfg(feature = "runtime")]
+        {
+            if !clang_sys::is_loaded() {
+                clang_sys::load()?;
+            }
         }
+
+        Ok(Clang {
+            #[cfg(feature = "runtime")]
+            libclang: Some(clang_sys::get_library().unwrap()),
+            unsend_unsync: PhantomData,
+        })
     }
 }
 
@@ -1671,7 +1678,22 @@ impl Drop for Clang {
 #[cfg(not(feature="runtime"))]
 impl Drop for Clang {
     fn drop(&mut self) {
-        AVAILABLE.store(true, atomic::Ordering::SeqCst);
+        CLANG_ACTIVE.with(|clang_active| {
+            clang_active.set(false);
+        });
+
+        #[cfg(feature = "runtime")]
+        {
+            // Drop the contained reference so the `unload` call below actually
+            // unloads the the last `libclang` instance.
+            let libclang = self.libclang.take().unwrap();
+            let unload = std::sync::Arc::strong_count(&libclang) == 1;
+            drop(libclang);
+
+            if unload {
+                let _ = clang_sys::unload();
+            }
+        }
     }
 }
 
@@ -1736,7 +1758,7 @@ impl CompileCommands {
     }
 
     /// Returns all commands for this search
-    pub fn get_commands(&self) -> Vec<CompileCommand> {
+    pub fn get_commands(&self) -> Vec<CompileCommand<'_>> {
         iter!(
             clang_CompileCommands_getSize(self.ptr),
             clang_CompileCommands_getCommand(self.ptr),
@@ -1787,7 +1809,7 @@ impl<'cmds> CompileCommand<'cmds> {
             clang_CompileCommand_getNumArgs(self.ptr),
             clang_CompileCommand_getArg(self.ptr),
         )
-        .map(utility::to_string)
+        .map(|x| unsafe { utility::to_string(x) })
         .collect()
     }
 
@@ -1947,7 +1969,7 @@ impl<'tu> Entity<'tu> {
     }
 
     /// Returns a completion string for this declaration or macro definition, if applicable.
-    pub fn get_completion_string(&self) -> Option<CompletionString> {
+    pub fn get_completion_string(&self) -> Option<CompletionString<'_>> {
         unsafe { clang_getCursorCompletionString(self.raw).map(CompletionString::from_ptr) }
     }
 
@@ -2518,7 +2540,7 @@ impl<'tu> Entity<'tu> {
             }
         }
 
-        extern fn visit(
+        extern "C" fn visit(
             cursor: CXCursor, parent: CXCursor, data: CXClientData
         ) -> CXChildVisitResult {
             unsafe {
@@ -3089,7 +3111,7 @@ impl<'i> TranslationUnit<'i> {
     }
 
     /// Returns a completer which runs code completion.
-    pub fn completer<F: Into<PathBuf>>(&self, file: F, line: u32, column: u32) -> Completer {
+    pub fn completer<F: Into<PathBuf>>(&self, file: F, line: u32, column: u32) -> Completer<'_> {
         Completer::new(self, file, line, column)
     }
 
@@ -3139,9 +3161,13 @@ impl<'i> Drop for TranslationUnit<'i> {
 impl<'i> fmt::Debug for TranslationUnit<'i> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         let spelling = unsafe { clang_getTranslationUnitSpelling(self.ptr) };
-        formatter.debug_struct("TranslationUnit")
-            .field("spelling", unsafe { &utility::to_string(spelling) })
+        let spelling_str = unsafe { utility::to_string(spelling) };
+        
+        formatter
+            .debug_struct("TranslationUnit")
+            .field("spelling", &spelling_str)
             .finish()
+
     }
 }
 

@@ -56,12 +56,12 @@ macro_rules! builder {
 
 /// Returns an iterator over the values returned by `get_argument`.
 macro_rules! iter {
-    ($num:ident($($num_argument:expr), *), $get:ident($($get_argument:expr), *),) => ({
+    ($num:ident($($num_argument:expr_2021), *), $get:ident($($get_argument:expr_2021), *),) => ({
         let count = unsafe { $num($($num_argument), *) };
         (0..count).map(|i| unsafe { $get($($get_argument), *, i) })
     });
 
-    ($num:ident($($num_argument:expr), *), $($get:ident($($get_argument:expr), *)), *,) => ({
+    ($num:ident($($num_argument:expr_2021), *), $($get:ident($($get_argument:expr_2021), *)), *,) => ({
         let count = unsafe { $num($($num_argument), *) };
         (0..count).map(|i| unsafe { ($($get($($get_argument), *, i)), *) })
     });
@@ -71,7 +71,7 @@ macro_rules! iter {
 
 /// Returns an optional iterator over the values returned by `get_argument`.
 macro_rules! iter_option {
-    ($num:ident($($num_argument:expr), *), $get:ident($($get_argument:expr), *),) => ({
+    ($num:ident($($num_argument:expr_2021), *), $get:ident($($get_argument:expr_2021), *),) => ({
         let count = unsafe { $num($($num_argument), *) };
         if count >= 0 {
             Some((0..count).map(|i| unsafe { $get($($get_argument), *, i as c_uint) }))
@@ -135,7 +135,7 @@ macro_rules! options {
             }
         }
 
-        pub use $fname::{$name};
+        pub use crate::$fname::{$name};
     );
 }
 
@@ -265,15 +265,15 @@ pub fn from_string<S: AsRef<str>>(string: S) -> CString {
     CString::new(string.as_ref()).expect("invalid C string")
 }
 
-pub unsafe fn to_string(clang: CXString) -> String {
+pub unsafe fn to_string(clang: CXString) -> String { unsafe {
         let c = CStr::from_ptr(clang_getCString(clang));
         let rust = c.to_str().expect("invalid Rust string").into();
         clang_disposeString(clang);
         rust
-}
+}}
 
 pub fn to_string_option(clang: CXString) -> Option<String> {
-    clang.map(to_string).and_then(|s| {
+    clang.map(|x| unsafe { to_string(x) }).and_then(|s| {
         if !s.is_empty() {
             Some(s)
         } else {

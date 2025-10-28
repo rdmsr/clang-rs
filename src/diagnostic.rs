@@ -20,7 +20,7 @@ use std::cmp::{self, Ordering};
 
 use clang_sys::*;
 
-use utility;
+use crate::utility;
 use super::{TranslationUnit};
 use super::source::{SourceLocation, SourceRange};
 
@@ -127,7 +127,7 @@ impl<'tu> Diagnostic<'tu> {
     }
 
     /// Returns the child diagnostics of this diagnostic.
-    pub fn get_children(&self) -> Vec<Diagnostic> {
+    pub fn get_children(&'_ self) -> Vec<Diagnostic<'_>> {
         let ptr = unsafe { clang_getChildDiagnostics(self.ptr) };
         iter!(
             clang_getNumDiagnosticsInSet(ptr),

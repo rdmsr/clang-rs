@@ -22,7 +22,7 @@ use std::marker::{PhantomData};
 
 use clang_sys::*;
 
-use utility;
+use crate::utility;
 use super::{TranslationUnit};
 
 //================================================
@@ -144,16 +144,16 @@ pub struct BlockCommand {
 impl BlockCommand {
     //- Constructors -----------------------------
 
-    unsafe fn from_raw(raw: CXComment) -> BlockCommand {
+    unsafe fn from_raw(raw: CXComment) -> BlockCommand { unsafe {
         let command = utility::to_string(clang_BlockCommandComment_getCommandName(raw));
         let arguments = iter!(
             clang_BlockCommandComment_getNumArgs(raw),
             clang_BlockCommandComment_getArgText(raw),
-        ).map(utility::to_string).collect();
+        ).map(|x| unsafe { utility::to_string(x) }).collect();
         let paragraph = clang_BlockCommandComment_getParagraph(raw);
         let children = Comment::from_raw(paragraph).get_children();
         BlockCommand { command, arguments, children }
-    }
+    }}
 }
 
 // Comment _______________________________________
@@ -216,7 +216,7 @@ pub struct HtmlStartTag {
 impl HtmlStartTag {
     //- Constructors -----------------------------
 
-    unsafe fn from_raw(raw: CXComment) -> HtmlStartTag {
+    unsafe fn from_raw(raw: CXComment) -> HtmlStartTag { unsafe {
         let name = utility::to_string(clang_HTMLTagComment_getTagName(raw));
         let attributes = iter!(
             clang_HTMLStartTag_getNumAttrs(raw),
@@ -225,7 +225,7 @@ impl HtmlStartTag {
         ).map(|(n, v)| (utility::to_string(n), utility::to_string(v))).collect();
         let closing = clang_HTMLStartTagComment_isSelfClosing(raw) != 0;
         HtmlStartTag { name, attributes, closing }
-    }
+    }}
 }
 
 // InlineCommand _________________________________
@@ -244,18 +244,18 @@ pub struct InlineCommand {
 impl InlineCommand {
     //- Constructors -----------------------------
 
-    unsafe fn from_raw(raw: CXComment) -> InlineCommand {
+    unsafe fn from_raw(raw: CXComment) -> InlineCommand { unsafe {
         let command = utility::to_string(clang_InlineCommandComment_getCommandName(raw));
         let arguments = iter!(
             clang_InlineCommandComment_getNumArgs(raw),
             clang_InlineCommandComment_getArgText(raw),
-        ).map(utility::to_string).collect();
+        ).map(|x| unsafe { utility::to_string(x) }).collect();
         let style = match clang_InlineCommandComment_getRenderKind(raw) {
             CXCommentInlineCommandRenderKind_Normal => None,
             other => Some(mem::transmute(other)),
         };
         InlineCommand { command, arguments, style }
-    }
+    }}
 }
 
 // ParamCommand __________________________________
@@ -276,7 +276,7 @@ pub struct ParamCommand {
 impl ParamCommand {
     //- Constructors -----------------------------
 
-    unsafe fn from_raw(raw: CXComment) -> ParamCommand {
+    unsafe fn from_raw(raw: CXComment) -> ParamCommand { unsafe {
         let index = if clang_ParamCommandComment_isParamIndexValid(raw) != 0 {
             Some(clang_ParamCommandComment_getParamIndex(raw) as usize)
         } else {
@@ -291,7 +291,7 @@ impl ParamCommand {
         let paragraph = clang_BlockCommandComment_getParagraph(raw);
         let children = Comment::from_raw(paragraph).get_children();
         ParamCommand { index, parameter, direction, children }
-    }
+    }}
 }
 
 // TParamCommand _________________________________
@@ -311,7 +311,7 @@ pub struct TParamCommand {
 impl TParamCommand {
     //- Constructors -----------------------------
 
-    unsafe fn from_raw(raw: CXComment) -> TParamCommand {
+    unsafe fn from_raw(raw: CXComment) -> TParamCommand { unsafe {
         let position = if clang_TParamCommandComment_isParamPositionValid(raw) != 0 {
             let depth = clang_TParamCommandComment_getDepth(raw);
             let index = clang_TParamCommandComment_getIndex(raw, depth) as usize;
@@ -323,5 +323,5 @@ impl TParamCommand {
         let paragraph = clang_BlockCommandComment_getParagraph(raw);
         let children = Comment::from_raw(paragraph).get_children();
         TParamCommand { position, parameter, children }
-    }
+    }}
 }

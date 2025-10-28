@@ -19,7 +19,7 @@ use clang_sys::*;
 
 use libc::{c_longlong};
 
-use utility::{FromError};
+use crate::utility::{FromError};
 
 //================================================
 // Macros
@@ -29,7 +29,7 @@ macro_rules! error {
     (
         $(#[$meta:meta])*
         pub enum $name:ident: $underlying:ty {
-            $(#[$variantdoc:meta] $variant:ident = ($error:pat, $message:expr)), +,
+            $(#[$variantdoc:meta] $variant:ident = ($error:pat, $message:expr_2021)), +,
         }
     ) => {
         $(#[$meta])*

@@ -25,7 +25,7 @@ use clang_sys::*;
 
 use libc::{c_uint, time_t};
 
-use utility::{self, Nullable};
+use crate::utility::{self, Nullable};
 use super::{Entity, TranslationUnit};
 use super::token::{Token};
 
@@ -280,7 +280,7 @@ impl<'tu> cmp::Eq for Module<'tu> { }
 // SourceLocation ________________________________
 
 macro_rules! location {
-    ($function:ident, $location:expr, $tu:expr) => ({
+    ($function:ident, $location:expr_2021, $tu:expr_2021) => ({
         fn uninit<T>() -> mem::MaybeUninit<T> { mem::MaybeUninit::uninit() }
         let (mut file, mut line, mut column, mut offset) = (uninit(), uninit(), uninit(), uninit());
         $function(
@@ -502,7 +502,7 @@ fn visit<'tu, F, G>(tu: &'tu TranslationUnit<'tu>, f: F, g: G) -> bool
         }
     }
 
-    extern fn visit(data: CXClientData, cursor: CXCursor, range: CXSourceRange) -> CXVisitorResult {
+    extern "C" fn visit(data: CXClientData, cursor: CXCursor, range: CXSourceRange) -> CXVisitorResult {
         unsafe {
             let &mut (tu, ref mut callback):
                 &mut (&TranslationUnit, Box<dyn Callback>) =

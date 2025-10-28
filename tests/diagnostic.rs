@@ -15,7 +15,7 @@ pub fn test(clang: &Clang) {
         assert_eq!(diagnostics.len(), 3);
 
         macro_rules! assert_diagnostic_eq {
-            ($diagnostic:expr, $severity:expr, $text:expr, $location:expr, $ranges:expr, $fix_its:expr) => ({
+            ($diagnostic:expr_2021, $severity:expr_2021, $text:expr_2021, $location:expr_2021, $ranges:expr_2021, $fix_its:expr_2021) => ({
                 let diagnostic = $diagnostic;
                 assert_eq!(diagnostic.get_severity(), $severity);
                 assert_eq!(diagnostic.get_text(), $text);

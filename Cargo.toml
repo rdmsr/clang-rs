@@ -2,6 +2,7 @@
 
 name = "clang"
 authors = ["Kyle Mayes <kyle@mayeses.com>"]
+edition = "2021"
 
 version = "2.0.0"
 

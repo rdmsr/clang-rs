@@ -19,14 +19,14 @@ use libc::{c_int};
 //================================================
 
 macro_rules! assert_location_eq {
-    ($location:expr, $file:expr, $line:expr, $column:expr, $offset:expr) => ({
+    ($location:expr_2021, $file:expr_2021, $line:expr_2021, $column:expr_2021, $offset:expr_2021) => ({
         let location = Location { file: $file, line: $line, column: $column, offset: $offset };
         assert_eq!($location, location);
     })
 }
 
 macro_rules! range {
-    ($file:expr, $sl:expr, $sc:expr, $el:expr, $ec:expr) => ({
+    ($file:expr_2021, $sl:expr_2021, $sc:expr_2021, $el:expr_2021, $ec:expr_2021) => ({
         let start = $file.get_location($sl, $sc);
         ::clang::source::SourceRange::new(start, $file.get_location($el, $ec))
     })
@@ -649,7 +649,7 @@ fn test() {
         assert_eq!(children.len(), 4);
 
         macro_rules! method {
-            ($entity:expr, $c:expr, $pv:expr, $s:expr, $v:expr) => ({
+            ($entity:expr_2021, $c:expr_2021, $pv:expr_2021, $s:expr_2021, $v:expr_2021) => ({
                 assert_eq!($entity.is_const_method(), $c);
                 assert_eq!($entity.is_pure_virtual_method(), $pv);
                 assert_eq!($entity.is_static_method(), $s);
@@ -1231,7 +1231,7 @@ fn test() {
 
     with_types(&clang, source, |ts| {
         macro_rules! qualifiers {
-            ($type_:expr, $c:expr, $r:expr, $v:expr) => ({
+            ($type_:expr_2021, $c:expr_2021, $r:expr_2021, $v:expr_2021) => ({
                 assert_eq!($type_.is_const_qualified(), $c);
                 assert_eq!($type_.is_restrict_qualified(), $r);
                 assert_eq!($type_.is_volatile_qualified(), $v);

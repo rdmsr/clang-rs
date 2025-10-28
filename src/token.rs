@@ -19,7 +19,7 @@ use std::mem;
 
 use clang_sys::*;
 
-use utility;
+use crate::utility;
 use super::{TranslationUnit};
 use super::source::{SourceLocation, SourceRange};
 

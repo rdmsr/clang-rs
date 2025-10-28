@@ -9,7 +9,7 @@ pub fn test(clang: &Clang) {
         assert_eq!(tokens.len(), 5);
 
         macro_rules! assert_token_eq {
-            ($token:expr, $kind:ident, $spelling:expr, $line:expr, $column:expr, $range:expr) => ({
+            ($token:expr_2021, $kind:ident, $spelling:expr_2021, $line:expr_2021, $column:expr_2021, $range:expr_2021) => ({
                 let token = $token;
                 assert_eq!(token.get_kind(), TokenKind::$kind);
                 assert_eq!(token.get_spelling(), $spelling);

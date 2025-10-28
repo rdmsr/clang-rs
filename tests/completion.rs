@@ -60,7 +60,7 @@ pub fn test(clang: &Clang) {
         results.sort();
 
         macro_rules! assert_result_eq {
-            ($result:expr, $kind:expr, $priority:expr, $brief:expr, $parent:expr, $typed:expr, $chunks:expr) => ({
+            ($result:expr_2021, $kind:expr_2021, $priority:expr_2021, $brief:expr_2021, $parent:expr_2021, $typed:expr_2021, $chunks:expr_2021) => ({
                 let result = $result;
                 assert_eq!(result.kind, $kind);
                 assert_eq!(result.string.get_priority(), $priority);
