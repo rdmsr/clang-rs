@@ -395,6 +395,17 @@ pub enum EntityKind {
     ///
     /// Only produced by `libclang` 7.0 and later.
     FixedPointLiteral = 149,
+
+    /// A concept specialization expression.
+    /// 
+    /// Only produced by `libclang` 15.0 and later.
+    ConceptSpecializationExpr = 153,
+
+    /// Expression that references a C++20 requires expression.
+    /// 
+    /// Only produced by `libclang` 15.0 and later.
+    RequiresExpr = 154,
+
     /// A statement whose specific kind is not exposed via this interface.
     UnexposedStmt = 200,
     /// A labelled statement in a function.
@@ -800,8 +811,14 @@ pub enum EntityKind {
     ///
     /// Only produced by `libclang` 4.0 and later.
     FriendDecl = 603,
+
+    /// A concept declaration.
+    /// 
+    /// Only produced `libclang` 15.0 and later.
+    ConceptDecl = 604,
+
     /// A single overload in a set of overloads.
-    ///
+    /// 
     /// Only produced by `libclang` 3.7 and later.
     OverloadCandidate = 700,
 }
@@ -809,7 +826,7 @@ pub enum EntityKind {
 impl EntityKind {
     fn from_raw(raw: c_int) -> Option<Self> {
         match raw {
-            1..=50 | 70..=73 | 100..=149 | 200..=280 | 300 | 400..=441 | 500..=503 | 600..=603
+            1..=50 | 70..=73 | 100..=154 | 200..=280 | 300 | 400..=441 | 500..=503 | 600..=604
             | 700 => {
                 Some(unsafe { mem::transmute(raw) })
             }
